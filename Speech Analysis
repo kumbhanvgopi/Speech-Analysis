@@ -1,0 +1,67 @@
+import speech_recognition as sr
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
+import torch
+import torchaudio
+import soundfile as sf
+import langcodes
+
+# Load the Wav2Vec 2.0 model and processor
+processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-960h")
+model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-960h")
+
+# Transcribe the audio from FLAC file
+def transcribe_flac(file_path):
+    speech, _ = torchaudio.load(file_path)
+    speech = speech[0].numpy()
+
+    # Load the audio file
+    audio_input, _ = sf.read(file_path)
+
+    # Perform speech recognition
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(file_path) as source:
+        audio = recognizer.record(source)
+        transcription = recognizer.recognize_google(audio)
+
+    return transcription
+
+# Detect the language of the transcribed text
+def detect_language(transcribed_text):
+    # This is a simplified example using the langdetect library
+    from langdetect import detect
+    language = detect(transcribed_text)
+    return language
+
+# Example usage
+#flac_file_path = "sample-2.flac"
+#transcribed_text = transcribe_flac(flac_file_path)
+#detected_language = detect_language(transcribed_text)
+#print("Detected language:", detected_language)
+
+import os
+def transcribe_flac_folder(folder_path):
+    transcriptions = []
+    for file in os.listdir(folder_path):
+        if file.endswith(".flac"):
+            flac_file_path = folder_path+"/"+os.path.join(file)
+            transcribed_text = transcribe_flac(flac_file_path)
+            transcriptions.append(transcribed_text)
+    return transcriptions
+
+flac_folder_path = "train"
+transcribed_texts = transcribe_flac_folder(flac_folder_path)
+for text in transcribed_texts:
+    detected_language = detect_language(text)
+    #print("Detected language:", detected_language)
+    
+flac_folder_path = "test"
+transcribed_texts = transcribe_flac_folder(flac_folder_path)
+for text in transcribed_texts:
+    detected_language = detect_language(text)
+    language_name = langcodes.Language.make(language=detected_language).display_name()
+    print("Detected language:", language_name)
+    
+    
+
+    
+    
